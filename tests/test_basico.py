@@ -91,6 +91,14 @@ def test_seno_y_error_maximo():
     assert lagrange.grado_polinomio(polinomio) == 3
 
 
+def test_cero_en_punto_irracional():
+    # cos(pi/2) debe ser exactamente 0 para que el error relativo sea "no definido".
+    assert evaluar_funcion(interpretar_funcion("cos(x)"), interpretar_numero("pi/2")) == 0
+    assert evaluar_funcion(interpretar_funcion("sin(x)"), interpretar_numero("pi")) == 0
+    # Un valor pequeño pero real no se confunde con cero.
+    assert evaluar_funcion(interpretar_funcion("exp(-x)"), interpretar_numero("100*sqrt(2)")) > 0
+
+
 if __name__ == "__main__":
     for nombre, prueba in list(globals().items()):
         if nombre.startswith("test_"):

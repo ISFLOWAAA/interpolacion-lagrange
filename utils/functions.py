@@ -173,13 +173,30 @@ def interpretar_numero(texto):
     return valor
 
 
+def _es_cero_por_redondeo(expresion, valor, resultado):
+    """True si el resultado es solo el redondeo de un punto irracional.
+
+    Un punto como pi/2 se guarda con PRECISION dígitos, así que cos(pi/2) da
+    ~1e-31 en lugar de 0. Se compara el resultado con la incertidumbre que
+    produce ese redondeo: |f'(x)| * |x| * 10^-PRECISION.
+    """
+    try:
+        pendiente = sp.diff(expresion, X).subs(X, valor).evalf(PRECISION)
+        return bool(abs(resultado) <= abs(pendiente * valor) * sp.Float(10) ** (3 - PRECISION))
+    except (TypeError, ValueError):
+        return False
+
+
 def evaluar_funcion(expresion, valor):
     """Evalúa f en un punto con alta precisión."""
+    valor = sp.sympify(valor)
     resultado = expresion.subs(X, valor)
     if not resultado.is_Rational:
         resultado = resultado.evalf(PRECISION)
     if not (resultado.is_real and resultado.is_finite):
         raise FuncionNoDefinida("la función no está definida en ese punto.")
+    if not valor.is_Rational and _es_cero_por_redondeo(expresion, valor, resultado):
+        return sp.Integer(0)
     return resultado
 
 
