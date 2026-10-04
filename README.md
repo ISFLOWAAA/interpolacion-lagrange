@@ -153,9 +153,11 @@ es ≈ 0.037226 cerca de x ≈ 2.61.
 
 Los campos numéricos aceptan `0.5`, `0,5`, `1/3`, `pi/2`, `sqrt(2)` o `1e-3`.
 
-**Seguridad.** No se usa `eval()`. El texto se analiza con el módulo `ast` y solo
-se aceptan números, la variable x, las operaciones + − × ÷ ^ y las funciones de
-la tabla anterior; cualquier otra cosa se rechaza con un mensaje de error.
+**Seguridad.** El texto se revisa antes de interpretarlo: solo puede contener
+números, la variable x, las operaciones + − × ÷ ^, paréntesis y las funciones de
+la tabla anterior. Cualquier otra palabra o símbolo se rechaza con un mensaje de
+error, de modo que no es posible ejecutar código desde la casilla de la función.
+Solo después de esa revisión el texto se entrega al intérprete de SymPy.
 
 ## 7. Validaciones implementadas
 
@@ -172,10 +174,12 @@ la tabla anterior; cualquier otra cosa se rechaza con un mensaje de error.
 
 ## 8. Explicación de cada módulo
 
-**`utils/functions.py`** — `interpretar_funcion` convierte el texto en una
-expresión de SymPy; `interpretar_numero` hace lo mismo para los campos numéricos;
-`evaluar_funcion` evalúa f en un punto con alta precisión;
+**`utils/functions.py`** — `interpretar_funcion` revisa el texto y lo convierte
+en una expresión de SymPy; `interpretar_numero` hace lo mismo para los campos
+numéricos; `evaluar_funcion` evalúa f en un punto con alta precisión;
 `crear_funcion_numerica` produce una versión rápida para evaluar miles de puntos.
+Aquí también está `ErrorEntrada`, el único tipo de error que usa el proyecto
+para avisar de un dato mal escrito.
 
 **`modules/lagrange.py`** — `polinomio_base` calcula Lᵢ(x);
 `construir_polinomio` devuelve Pₙ(x) simplificado y la lista de Lᵢ;
@@ -188,13 +192,15 @@ y `error_maximo`.
 
 **`modules/validation.py`** — `validar_funcion`, `validar_numero`,
 `validar_puntos`, `validar_intervalo` y `es_extrapolacion`. Todas lanzan
-`ErrorValidacion` con un mensaje listo para mostrar.
+`ErrorEntrada` con un mensaje listo para mostrar.
 
 **`utils/formato.py`** — convierte números y polinomios a texto y LaTeX.
 
 **`app.py`** — la pantalla: inicio, datos (función, número de puntos, tabla) y
 seis pestañas de resultados (Polinomio, Interpolar directo, Evaluación y errores,
-Error máximo, Gráfica, Resultados).
+Error máximo, Gráfica, Resultados). Cada parte de la pantalla es una función con
+nombre descriptivo (`paso_funcion`, `paso_puntos`, `pestana_polinomio`, …) y
+`main()`, al final del archivo, las llama en orden.
 
 ## 9. Pruebas
 

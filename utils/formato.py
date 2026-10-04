@@ -1,30 +1,28 @@
-"""Funciones para presentar números y polinomios (texto y LaTeX)."""
+"""Presentación de números y polinomios en pantalla (texto y LaTeX)."""
 
 import sympy as sp
 
-from utils.functions import X
-
-# Las fracciones con denominador mayor se muestran como decimales.
-_DENOMINADOR_MAXIMO = 1000
-# Coeficientes decimales por debajo de este valor son ruido de redondeo.
-_RUIDO = 1e-20
+# Una fracción con denominador mayor que este se muestra como decimal.
+DENOMINADOR_MAXIMO = 1000
 
 
 def fmt_num(valor, decimales=6):
-    """Número con decimales fijos; notación científica si es muy pequeño o grande."""
+    """Número con decimales fijos. Si es muy pequeño o muy grande usa notación científica."""
     valor = float(valor)
-    if valor != 0 and (abs(valor) < 10 ** (-decimales) or abs(valor) >= 1e12):
+    muy_pequeno = valor != 0 and abs(valor) < 10 ** (-decimales)
+    muy_grande = abs(valor) >= 1e12
+    if muy_pequeno or muy_grande:
         return f"{valor:.{decimales}e}"
     return f"{valor:.{decimales}f}"
 
 
 def fmt_corto(valor):
-    """Número en forma compacta (sin ceros sobrantes), para datos de entrada."""
+    """Número sin ceros sobrantes (0.5 en vez de 0.500000). Se usa para los datos."""
     return f"{float(valor):.10g}"
 
 
 def latex_decimal(valor, decimales=6):
-    """Igual que fmt_num, pero la notación científica se escribe como potencia de 10."""
+    """Como fmt_num, pero escribe 1.5e-07 en la forma 1.5 × 10^-7."""
     texto = fmt_num(valor, decimales)
     if "e" in texto:
         mantisa, exponente = texto.split("e")
@@ -32,46 +30,31 @@ def latex_decimal(valor, decimales=6):
     return texto
 
 
-def _latex_magnitud(valor, decimales):
-    """Valor absoluto de un coeficiente: entero o fracción si es exacto."""
-    valor = abs(valor)
-    if valor.is_Rational and valor.q <= _DENOMINADOR_MAXIMO:
-        return str(valor.p) if valor.q == 1 else rf"\frac{{{valor.p}}}{{{valor.q}}}"
-    return latex_decimal(valor, decimales)
-
-
 def latex_polinomio(polinomio, decimales=6):
-    """Polinomio en LaTeX, ordenado de mayor a menor grado."""
-    coeficientes = sp.Poly(polinomio, X).all_coeffs()
-    grado_maximo = len(coeficientes) - 1
-    partes = []
-    for posicion, coeficiente in enumerate(coeficientes):
-        grado = grado_maximo - posicion
-        if coeficiente == 0 or (not coeficiente.is_Rational and abs(coeficiente) < _RUIDO):
-            continue
-        variable = "" if grado == 0 else ("x" if grado == 1 else f"x^{{{grado}}}")
-        magnitud = _latex_magnitud(coeficiente, decimales)
-        if variable and abs(coeficiente) == 1:
-            magnitud = ""
-        signo = "-" if coeficiente < 0 else "+"
-        if not partes:
-            signo = "-" if coeficiente < 0 else ""
-        partes.append(f"{signo} {magnitud}{variable}".strip())
-    return " ".join(partes) if partes else "0"
+    """Polinomio en LaTeX.
+
+    Los coeficientes que son fracciones sencillas se dejan exactos (1/2);
+    los demás se redondean a la cantidad de decimales pedida.
+    """
+    redondeos = {}
+    for numero in polinomio.atoms(sp.Number):
+        es_fraccion_sencilla = numero.is_Rational and numero.q <= DENOMINADOR_MAXIMO
+        if not es_fraccion_sencilla:
+            redondeos[numero] = sp.Float(round(float(numero), decimales))
+    return sp.latex(polinomio.xreplace(redondeos))
 
 
-def _resta(minuendo, valor):
-    """Texto de 'minuendo - valor' sin dobles signos."""
-    if valor == 0:
-        return minuendo
-    if valor > 0:
-        return f"{minuendo} - {fmt_corto(valor)}"
-    return f"{minuendo} + {fmt_corto(-valor)}"
+def _entre_parentesis_si_negativo(valor):
+    texto = fmt_corto(valor)
+    return f"({texto})" if valor < 0 else texto
 
 
-def latex_base_producto(xs, indice):
-    """Polinomio base L_i(x) escrito como cociente de productos."""
-    otros = [xj for j, xj in enumerate(xs) if j != indice]
-    numerador = "".join(f"({_resta('x', xj)})" for xj in otros)
-    denominador = "".join(f"({_resta(fmt_corto(xs[indice]), xj)})" for xj in otros)
+def latex_base_producto(xs, i):
+    """Polinomio base L_i(x) escrito como en la fórmula, antes de desarrollarlo."""
+    numerador = ""
+    denominador = ""
+    for j, xj in enumerate(xs):
+        if j != i:
+            numerador += f"(x - {_entre_parentesis_si_negativo(xj)})"
+            denominador += f"({fmt_corto(xs[i])} - {_entre_parentesis_si_negativo(xj)})"
     return rf"\frac{{{numerador}}}{{{denominador}}}"
