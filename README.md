@@ -5,7 +5,10 @@ Lagrange: ingresar n + 1 puntos, obtener el polinomio de grado n, ver los
 polinomios base, interpolar un punto, comparar con la función real, calcular
 errores y ver la gráfica. Todo se usa desde el navegador, sin escribir código.
 
-**Aplicación en línea:** _pendiente de publicar — ver «Despliegue en internet»_
+**Aplicación en línea:** <https://interpolador-lagrange.streamlit.app/>
+(funciona en celular, tablet y computador, sin instalar nada)
+
+**Código fuente:** <https://github.com/ISFLOWAAA/interpolacion-lagrange>
 
 ## Qué problema resuelve
 
